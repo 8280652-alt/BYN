@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2e7d32">
+<meta name="description" content="Учёт личных и бытовых расходов в белорусских рублях">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Расходы">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Расходы BYN</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+:root{
+  --bg:#f3f4f6; --card:#fff; --text:#1f2937; --muted:#6b7280;
+  --primary:#2e7d32; --primary-dark:#1b5e20; --danger:#c62828;
+  --border:#e5e7eb; --radius:12px; --shadow:0 1px 3px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:var(--bg);color:var(--text);font-size:15px;line-height:1.4;
+  padding-bottom:calc(20px + env(safe-area-inset-bottom));
+}
+header{
+  background:var(--primary);color:#fff;
+  padding:14px 16px;padding-top:calc(14px + env(safe-area-inset-top));
+  position:sticky;top:0;z-index:100;
+}
+header h1{margin:0;font-size:17px;font-weight:600}
+nav{
+  display:flex;background:var(--card);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:99;overflow-x:auto;scrollbar-width:none;
+}
+nav::-webkit-scrollbar{display:none}
+nav button{
+  flex:1;min-width:68px;padding:13px 6px;border:none;background:none;
+  font-size:13px;color:var(--muted);cursor:pointer;
+  border-bottom:3px solid transparent;font-family:inherit;white-space:nowrap;
+}
+nav button.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+main{padding:12px;max-width:1200px;margin:0 auto}
+section{display:none}
+section.active{display:block}
+.card{background:var(--card);border-radius:var(--radius);padding:14px;
+  box-shadow:var(--shadow);margin-bottom:12px}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+input,select,button{font-size:16px;font-family:inherit}
+input[type="date"],input[type="month"],input[type="number"],select{
+  width:100%;padding:11px;border:1px solid var(--border);
+  border-radius:8px;background:#fff;color:var(--text)
+}
+input[type="number"]{-moz-appearance:textfield}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;
+  padding:12px 18px;border:none;border-radius:8px;background:var(--primary);
+  color:#fff;font-weight:600;cursor:pointer;min-height:44px;user-select:none}
+.btn:active{opacity:.85}
+.btn-secondary{background:#e5e7eb;color:var(--text)}
+.btn-danger{background:var(--danger)}
+.btn-block{width:100%}
+.btn-sm{padding:8px 12px;min-height:36px;font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>*{flex:1;min-width:100px}
+
+.entry-item{display:grid;grid-template-columns:70px 1fr auto 32px;
+  gap:8px;align-items:center;padding:10px 0;
+  border-bottom:1px solid var(--border);font-size:14px}
+.entry-item:last-child{border-bottom:none}
+.entry-date{color:var(--muted);font-size:12px}
+.entry-section{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.entry-amount{font-weight:600;white-space:nowrap}
+.backdated{color:#b45309;font-size:10px;font-weight:600;margin-left:4px}
+.del-btn{width:32px;height:32px;padding:0;border:none;border-radius:6px;
+  background:#fee2e2;color:var(--danger);font-size:16px;cursor:pointer}
+.total-line{border-top:2px solid var(--border);font-weight:700;
+  padding:12px 0;display:flex;justify-content:space-between;font-size:15px}
+
+.summary-table{width:100%;border-collapse:collapse;font-size:13px}
+.summary-table th,.summary-table td{
+  padding:6px 8px;border:1px solid var(--border);text-align:right;
+  white-space:nowrap;min-width:62px
+}
+.summary-table th{background:#f3f4f6;font-weight:600;font-size:11px;text-align:center}
+.summary-table td:first-child,.summary-table th:first-child{
+  text-align:left;position:sticky;left:0;background:#fff;z-index:1;
+  box-shadow:2px 0 2px -1px rgba(0,0,0,.08);min-width:78px
+}
+.summary-table th:first-child{background:#f3f4f6;z-index:2}
+.summary-table tr.total td{font-weight:700;background:#fff8e1}
+.summary-table tr.total td:first-child{background:#fff8e1}
+.table-scroll{overflow-x:auto;margin:0 -14px;padding:0 14px}
+
+.empty{text-align:center;color:var(--muted);padding:30px 10px;font-size:14px}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
+  background:#1f2937;color:#fff;padding:11px 22px;border-radius:22px;
+  font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:1000;
+  max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+
+.section-manage{display:grid;grid-template-columns:1fr 120px 34px;
+  gap:6px;margin-bottom:6px;align-items:center}
+.section-manage input,.section-manage select{padding:8px;font-size:14px}
+.section-manage .del-btn{width:34px;height:34px}
+
+.color-swatch{display:inline-block;width:14px;height:14px;
+  border-radius:3px;margin-right:6px;vertical-align:middle;border:1px solid rgba(0,0,0,.1)}
+.mode-btns{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.mode-btns .btn{flex:1;padding:10px 8px;min-height:40px;font-size:13px;min-width:70px}
+.hint{font-size:12px;color:var(--muted);margin-top:6px}
+
+#chart-bars svg, #chart-donut svg{width:100%;height:auto;display:block}
+#chart-bars svg{max-height:380px}
+#chart-donut svg{max-width:300px;margin:0 auto}
+</style>
+</head>
+<body>
+
+<header><h1>💰 Расходы BYN</h1></header>
+<nav>
+  <button data-tab="entry" class="active">Ввод</button>
+  <button data-tab="journal">Журнал</button>
+  <button data-tab="summary">Итоги</button>
+  <button data-tab="charts">Графики</button>
+  <button data-tab="settings">Настройки</button>
+</nav>
+
+<main>
+
+<!-- ============ ВВОД ============ -->
+<section id="tab-entry" class="active">
+  <div class="card">
+    <form id="entry-form">
+      <label for="entry-date">Дата</label>
+      <div class="row" style="margin-bottom:6px">
+        <button type="button" class="btn btn-sm btn-secondary" data-quickdate="today">Сегодня</button>
+        <button type="button" class="btn btn-sm btn-secondary" data-quickdate="yesterday">Вчера</button>
+      </div>
+      <input type="date" id="entry-date" required>
+      <label for="entry-section">Раздел</label>
+      <select id="entry-section" required></select>
+      <label for="entry-amount">Сумма, BYN</label>
+      <input type="number" id="entry-amount" step="0.01" min="0.01" inputmode="decimal" required placeholder="0.00">
+      <div style="margin-top:14px">
+        <button type="submit" class="btn btn-block">Добавить</button>
+      </div>
+      <div class="hint">Дату можно менять — так удобно вносить траты <b>задним числом</b>. Запись попадёт в итоги своей недели и своего месяца автоматически.</div>
+    </form>
+  </div>
+  <div class="card">
+    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">Последние 5 записей</div>
+    <div id="recent-list"><div class="empty">Нет записей</div></div>
+  </div>
+</section>
+
+<!-- ============ ЖУРНАЛ ============ -->
+<section id="tab-journal">
+  <div class="card">
+    <label for="journal-month">Месяц (быстрый фильтр)</label>
+    <input type="month" id="journal-month">
+
+    <label style="margin-top:14px">Или диапазон дат</label>
+    <div class="row">
+      <div><label for="journal-from">От</label><input type="date" id="journal-from"></div>
+      <div><label for="journal-to">До</label><input type="date" id="journal-to"></div>
+    </div>
+    <div style="margin-top:8px">
+      <button type="button" class="btn btn-sm btn-secondary" id="journal-clear-range">Очистить диапазон</button>
+    </div>
+
+    <label for="journal-section" style="margin-top:14px">Фильтр по разделу</label>
+    <select id="journal-section"><option value="">Все разделы</option></select>
+
+    <div class="hint">Используется либо месяц, либо диапазон дат — при выборе одного второе сбрасывается.</div>
+  </div>
+  <div class="card">
+    <div id="journal-list"><div class="empty">Нет записей</div></div>
+  </div>
+</section>
+
+<!-- ============ ИТОГИ ============ -->
+<section id="tab-summary">
+  <div class="card">
+    <div class="mode-btns">
+      <button class="btn btn-sm summary-mode active" data-mode="day">По дням</button>
+      <button class="btn btn-sm btn-secondary summary-mode" data-mode="week">По неделям</button>
+      <button class="btn btn-sm btn-secondary summary-mode" data-mode="month">По месяцам</button>
+      <button class="btn btn-sm btn-secondary summary-mode" data-mode="range">Период</button>
+    </div>
+    <div id="ctrl-day">
+      <label for="day-period">Месяц</label>
+      <input type="month" id="day-period">
+    </div>
+    <div id="ctrl-week" style="display:none">
+      <label for="week-period">Год</label>
+      <input type="number" id="week-period" min="2000" max="2100">
+    </div>
+    <div id="ctrl-month" style="display:none">
+      <label for="month-period">Год</label>
+      <input type="number" id="month-period" min="2000" max="2100">
+    </div>
+    <div id="ctrl-range" style="display:none">
+      <div class="row">
+        <div><label for="range-from">Начало периода</label><input type="date" id="range-from"></div>
+        <div><label for="range-to">Конец периода</label><input type="date" id="range-to"></div>
+      </div>
+      <div style="margin-top:8px">
+        <button type="button" class="btn btn-sm btn-secondary" id="range-preset-month">Текущий месяц</button>
+        <button type="button" class="btn btn-sm btn-secondary" id="range-preset-year">Текущий год</button>
+        <button type="button" class="btn btn-sm btn-secondary" id="range-preset-30d">Последние 30 дней</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div id="summary-output"><div class="empty">Нет данных</div></div>
+    <div class="hint">Все суммы — в белорусских рублях (BYN).</div>
+  </div>
+</section>
+
+<!-- ============ ГРАФИКИ ============ -->
+<section id="tab-charts">
+  <div class="card">
+    <label for="charts-period">Период</label>
+    <select id="charts-period">
+      <option value="3m">Последние 3 месяца</option>
+      <option value="6m" selected>Последние 6 месяцев</option>
+      <option value="12m">Последние 12 месяцев</option>
+      <option value="year">Текущий год</option>
+      <option value="lastYear">Прошлый год</option>
+      <option value="custom">Произвольный диапазон дат</option>
+    </select>
+
+    <div id="charts-custom-range" style="display:none">
+      <div class="row">
+        <div><label for="charts-from">От</label><input type="date" id="charts-from"></div>
+        <div><label for="charts-to">До</label><input type="date" id="charts-to"></div>
+      </div>
+      <div style="margin-top:8px">
+        <button type="button" class="btn btn-sm btn-secondary" data-charts-preset="month">Текущий месяц</button>
+        <button type="button" class="btn btn-sm btn-secondary" data-charts-preset="year">Текущий год</button>
+        <button type="button" class="btn btn-sm btn-secondary" data-charts-preset="3m">3 месяца</button>
+        <button type="button" class="btn btn-sm btn-secondary" data-charts-preset="6m">6 месяцев</button>
+      </div>
+    </div>
+
+    <label for="charts-group" style="margin-top:14px">Показать группу на гистограмме</label>
+    <select id="charts-group"><option value="">Все группы (стек)</option></select>
+  </div>
+  <div class="card">
+    <h3 style="margin:0 0 10px;font-size:14px">Расходы по месяцам</h3>
+    <div id="chart-bars"></div>
+  </div>
+  <div class="card">
+    <h3 style="margin:0 0 10px;font-size:14px">Распределение по группам</h3>
+    <div id="chart-donut"></div>
+    <div id="chart-legend" style="margin-top:12px"></div>
+  </div>
+</section>
+
+<!-- ============ НАСТРОЙКИ ============ -->
+<section id="tab-settings">
+  <div class="card">
+    <h3 style="margin:0 0 10px;font-size:15px">Разделы и группы</h3>
+    <div id="sections-editor"></div>
+    <div style="margin-top:12px">
+      <button class="btn btn-sm btn-secondary" id="add-section">+ Добавить раздел</button>
+    </div>
+  </div>
+  <div class="card">
+    <h3 style="margin:0 0 10px;font-size:15px">Данные</h3>
+    <div class="row">
+      <button class="btn btn-secondary btn-sm" id="export-btn">Экспорт JSON</button>
+      <button class="btn btn-secondary btn-sm" id="import-btn">Импорт JSON</button>
+    </div>
+    <input type="file" id="import-file" accept=".json" style="display:none">
+    <div style="margin-top:12px">
+      <button class="btn btn-danger btn-sm btn-block" id="clear-btn">Удалить все записи</button>
+    </div>
+    <div class="hint">Экспорт → сохраните файл → откройте на другом устройстве и нажмите «Импорт», выбрав этот файл.</div>
+  </div>
+</section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================== КОНСТАНТЫ ================== */
+const GROUP_ORDER = ["Машина","Дом","Финансы","Дети","Личное"];
+const GROUP_COLORS = {
+  "Машина":"#BDD7EE", "Дом":"#C6EFCE", "Финансы":"#F8CBAD",
+  "Дети":"#E4DFEC", "Личное":"#FFEB9C"
+};
+const GROUP_FALLBACK_COLOR = "#E5E7EB";
+const DEFAULT_SECTIONS = [
+  {name:"Топливо",group:"Машина"},{name:"Запчасти",group:"Машина"},{name:"Газ",group:"Машина"},
+  {name:"Еда",group:"Дом"},{name:"Бытовая химия",group:"Дом"},{name:"Вывоз мусора",group:"Дом"},
+  {name:"Свет",group:"Дом"},{name:"Телефоны",group:"Дом"},
+  {name:"Кредит",group:"Финансы"},{name:"ИП",group:"Финансы"},
+  {name:"Школа",group:"Дети"},{name:"Питание в школе",group:"Дети"},{name:"Расходы на детей",group:"Дети"},
+  {name:"Развлечения",group:"Личное"},{name:"Спорт",group:"Личное"},{name:"Аптека",group:"Личное"},
+  {name:"Вещи",group:"Личное"},{name:"Разное",group:"Личное"}
+];
+const STORAGE_KEY = "expenses_byn_v1";
+const MN_SHORT = ["Янв","Фев","Мар","Апр","Май","Июн","Июл","Авг","Сен","Окт","Ноя","Дек"];
+
+let state = load();
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const s = JSON.parse(raw);
+      if(s && Array.isArray(s.sections) && Array.isArray(s.entries)) return s;
+    }
+  }catch(e){}
+  return {sections: JSON.parse(JSON.stringify(DEFAULT_SECTIONS)), entries: []};
+}
+function save(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  catch(e){ toast("Не удалось сохранить"); }
+}
+
+/* ================== УТИЛИТЫ ================== */
+const pad = n => String(n).padStart(2,"0");
+function toISODate(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function todayISO(){ return toISODate(new Date()); }
+function isoWeek(dateStr){
+  const d = new Date(dateStr+"T00:00:00");
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(t.getUTCFullYear(),0,1));
+  return {year: t.getUTCFullYear(), week: Math.ceil((((t - yearStart)/86400000)+1)/7)};
+}
+function weekdayName(dateStr){
+  const d = new Date(dateStr+"T00:00:00");
+  return ["вс","пн","вт","ср","чт","пт","сб"][d.getDay()];
+}
+function fmtBYN(n){
+  return new Intl.NumberFormat('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n)+" BYN";
+}
+function fmtNum(n){
+  return new Intl.NumberFormat('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
+}
+function fmtShort(n){
+  if(n >= 1000000) return (n/1000000).toFixed(1)+"M";
+  if(n >= 10000) return (n/1000).toFixed(0)+"k";
+  if(n >= 1000) return (n/1000).toFixed(1)+"k";
+  return n.toFixed(0);
+}
+function esc(s){
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+}
+function colorOf(group){ return GROUP_COLORS[group] || GROUP_FALLBACK_COLOR; }
+function groupOfSection(name){
+  const s = state.sections.find(s => s.name === name);
+  return s ? s.group : "Прочее";
+}
+let toastTimer;
+function toast(msg){
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove("show"), 2200);
+}
+function sectionOrder(){
+  const groups = {};
+  state.sections.forEach(s=>{ (groups[s.group]=groups[s.group]||[]).push(s.name); });
+  const order = GROUP_ORDER.filter(g=>groups[g])
+    .concat(Object.keys(groups).filter(g=>!GROUP_ORDER.includes(g)));
+  const flat = [];
+  order.forEach(g=>groups[g].forEach(n=>flat.push({name:n, group:g})));
+  return {groups, order, flat};
+}
+
+/* ================== НАВИГАЦИЯ ================== */
+document.querySelectorAll("nav button").forEach(btn=>{
+  btn.onclick = ()=>{
+    document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    document.querySelectorAll("main section").forEach(s=>s.classList.remove("active"));
+    document.getElementById("tab-"+btn.dataset.tab).classList.add("active");
+    const t = btn.dataset.tab;
+    if(t === "journal") renderJournal();
+    if(t === "summary") renderSummary();
+    if(t === "charts") renderCharts();
+  };
+});
+
+/* ================== ВВОД ================== */
+function renderEntrySelect(){
+  const groups = {};
+  state.sections.forEach(s=>{ (groups[s.group]=groups[s.group]||[]).push(s.name); });
+  const order = GROUP_ORDER.filter(g=>groups[g])
+    .concat(Object.keys(groups).filter(g=>!GROUP_ORDER.includes(g)));
+  let html = "";
+  order.forEach(g=>{
+    html += `<optgroup label="${esc(g)}">`;
+    groups[g].forEach(n=>{ html += `<option>${esc(n)}</option>`; });
+    html += "</optgroup>";
+  });
+  document.getElementById("entry-section").innerHTML = html;
+}
+
+document.querySelectorAll("[data-quickdate]").forEach(btn=>{
+  btn.onclick = ()=>{
+    const d = new Date();
+    if(btn.dataset.quickdate === "yesterday") d.setDate(d.getDate()-1);
+    document.getElementById("entry-date").value = toISODate(d);
+  };
+});
+
+document.getElementById("entry-form").onsubmit = e=>{
+  e.preventDefault();
+  const date = document.getElementById("entry-date").value;
+  const section = document.getElementById("entry-section").value;
+  const amount = parseFloat(document.getElementById("entry-amount").value);
+  if(!date || !section || !(amount > 0)){ toast("Заполните все поля"); return; }
+  state.entries.push({id: Date.now()+Math.random(), date, section, amount});
+  save();
+  document.getElementById("entry-amount").value = "";
+  document.getElementById("entry-amount").focus();
+  const isBackdated = date !== todayISO();
+  toast(`+ ${fmtBYN(amount)} · ${section}${isBackdated ? " · задним числом" : ""}`);
+  renderRecent(); renderJournal(); renderSummary(); renderCharts();
+};
+
+function renderRecent(){
+  const list = document.getElementById("recent-list");
+  const today = todayISO();
+  const recent = state.entries.slice()
+    .sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id).slice(0,5);
+  if(!recent.length){ list.innerHTML = '<div class="empty">Нет записей</div>'; return; }
+  list.innerHTML = recent.map(e=>`
+    <div class="entry-item">
+      <div class="entry-date">${e.date}<br>${weekdayName(e.date)}</div>
+      <div class="entry-section">${esc(e.section)}${
+        e.date !== today ? '<span class="backdated">архив</span>' : ""
+      }</div>
+      <div class="entry-amount">${fmtBYN(e.amount)}</div>
+      <div></div>
+    </div>`).join("");
+}
+
+/* ================== ЖУРНАЛ ================== */
+function renderJournalSelect(){
+  const sel = document.getElementById("journal-section");
+  const cur = sel.value;
+  const {groups, order} = sectionOrder();
+  let html = '<option value="">Все разделы</option>';
+  order.forEach(g=>{
+    html += `<optgroup label="${esc(g)}">`;
+    groups[g].forEach(n=>{ html += `<option value="${esc(n)}">${esc(n)}</option>`; });
+    html += "</optgroup>";
+  });
+  sel.innerHTML = html;
+  if([...sel.options].some(o=>o.value===cur)) sel.value = cur;
+}
+
+function renderJournal(){
+  const monthStr = document.getElementById("journal-month").value;
+  const fromStr = document.getElementById("journal-from").value;
+  const toStr = document.getElementById("journal-to").value;
+  const sectionFilter = document.getElementById("journal-section").value;
+  const list = document.getElementById("journal-list");
+
+  let entries = state.entries.slice();
+  let filterDesc = "";
+
+  if(fromStr || toStr){
+    entries = entries.filter(e =>
+      (!fromStr || e.date >= fromStr) && (!toStr || e.date <= toStr)
+    );
+    filterDesc = `диапазон ${fromStr || "…"} — ${toStr || "…"}`;
+  } else if(monthStr){
+    entries = entries.filter(e => e.date.startsWith(monthStr));
+    filterDesc = `месяц ${monthStr}`;
+  }
+  if(sectionFilter){
+    entries = entries.filter(e => e.section === sectionFilter);
+    filterDesc += ` · раздел «${sectionFilter}»`;
+  }
+
+  entries.sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
+  if(!entries.length){ list.innerHTML = '<div class="empty">Нет записей</div>'; return; }
+
+  let total = 0;
+  let html = entries.map(e=>{
+    total += e.amount;
+    return `<div class="entry-item">
+      <div class="entry-date">${e.date}<br>${weekdayName(e.date)}</div>
+      <div class="entry-section">${esc(e.section)}</div>
+      <div class="entry-amount">${fmtBYN(e.amount)}</div>
+      <button class="del-btn" data-del="${e.id}" aria-label="Удалить">✕</button>
+    </div>`;
+  }).join("");
+  html += `<div class="total-line">
+    <span>Итого (${entries.length} зап.${filterDesc ? " · "+esc(filterDesc) : ""})</span>
+    <span>${fmtBYN(total)}</span>
+  </div>`;
+  list.innerHTML = html;
+  list.querySelectorAll("[data-del]").forEach(btn=>{
+    btn.onclick = ()=>{
+      if(!confirm("Удалить эту запись?")) return;
+      state.entries = state.entries.filter(x=>String(x.id)!==btn.dataset.del);
+      save(); renderAll(); toast("Удалено");
+    };
+  });
+}
+
+document.getElementById("journal-month").onchange = ()=>{
+  document.getElementById("journal-from").value = "";
+  document.getElementById("journal-to").value = "";
+  renderJournal();
+};
+["journal-from","journal-to"].forEach(id=>{
+  document.getElementById(id).onchange = ()=>{
+    document.getElementById("journal-month").value = "";
+    renderJournal();
+  };
+});
+document.getElementById("journal-clear-range").onclick = ()=>{
+  document.getElementById("journal-from").value = "";
+  document.getElementById("journal-to").value = "";
+  renderJournal();
+};
+document.getElementById("journal-section").onchange = renderJournal;
+
+/* ================== ИТОГИ ================== */
+let summaryMode = "day";
+
+document.querySelectorAll(".summary-mode").forEach(btn=>{
+  btn.onclick = ()=>{
+    document.querySelectorAll(".summary-mode").forEach(b=>{
+      b.classList.remove("active"); b.classList.add("btn-secondary");
+    });
+    btn.classList.add("active"); btn.classList.remove("btn-secondary");
+    summaryMode = btn.dataset.mode;
+    document.getElementById("ctrl-day").style.display   = summaryMode==="day"   ? "" : "none";
+    document.getElementById("ctrl-week").style.display  = summaryMode==="week"  ? "" : "none";
+    document.getElementById("ctrl-month").style.display = summaryMode==="month" ? "" : "none";
+    document.getElementById("ctrl-range").style.display = summaryMode==="range" ? "" : "none";
+    renderSummary();
+  };
+});
+
+["day-period","week-period","month-period","range-from","range-to"].forEach(id=>{
+  document.getElementById(id).oninput = renderSummary;
+  document.getElementById(id).onchange = renderSummary;
+});
+
+document.getElementById("range-preset-month").onclick = ()=>{
+  const n = new Date();
+  document.getElementById("range-from").value = toISODate(new Date(n.getFullYear(), n.getMonth(), 1));
+  document.getElementById("range-to").value   = toISODate(new Date(n.getFullYear(), n.getMonth()+1, 0));
+  renderSummary();
+};
+document.getElementById("range-preset-year").onclick = ()=>{
+  const n = new Date();
+  document.getElementById("range-from").value = toISODate(new Date(n.getFullYear(), 0, 1));
+  document.getElementById("range-to").value   = toISODate(new Date(n.getFullYear(), 11, 31));
+  renderSummary();
+};
+document.getElementById("range-preset-30d").onclick = ()=>{
+  const n = new Date();
+  const past = new Date(); past.setDate(n.getDate()-29);
+  document.getElementById("range-from").value = toISODate(past);
+  document.getElementById("range-to").value   = toISODate(n);
+  renderSummary();
+};
+
+function renderSummary(){
+  const out = document.getElementById("summary-output");
+  const {groups, order, flat} = sectionOrder();
+  if(!flat.length){ out.innerHTML='<div class="empty">Разделы не заданы</div>'; return; }
+
+  if(summaryMode === "range"){
+    const from = document.getElementById("range-from").value;
+    const to   = document.getElementById("range-to").value;
+    if(!from && !to){
+      out.innerHTML = '<div class="empty">Укажите начало и/или конец периода</div>';
+      return;
+    }
+    if(from && to && from > to){
+      out.innerHTML = '<div class="empty">Дата начала не может быть позже даты конца</div>';
+      return;
+    }
+    const entries = state.entries.filter(e =>
+      (!from || e.date >= from) && (!to || e.date <= to)
+    );
+    const periodTitle = `Период: ${from || "с самого начала"} — ${to || "по сегодня"}`;
+    if(!entries.length){
+      out.innerHTML = `<div class="empty">Нет данных за период<br><small>${esc(periodTitle)}</small></div>`;
+      return;
+    }
+
+    const bySection = {}, byGroup = {};
+    let grand = 0;
+    entries.forEach(e=>{
+      bySection[e.section] = (bySection[e.section]||0) + e.amount;
+      const g = groupOfSection(e.section);
+      byGroup[g] = (byGroup[g]||0) + e.amount;
+      grand += e.amount;
+    });
+
+    let html = '<div class="table-scroll"><table class="summary-table"><thead>';
+    html += '<tr><th rowspan="2" style="vertical-align:middle">Период</th>';
+    order.forEach(g=>{
+      html += `<th colspan="${groups[g].length}" style="background:${colorOf(g)}">${esc(g)}</th>`;
+    });
+    html += '<th rowspan="2" style="vertical-align:middle;background:#ffe4b5">Итого</th></tr><tr>';
+    order.forEach(g=>{
+      groups[g].forEach(n=>{
+        html += `<th style="background:${colorOf(g)}">${esc(n)}</th>`;
+      });
+    });
+    html += '</tr></thead><tbody>';
+    html += '<tr><td>Итого за период</td>';
+    order.forEach(g=>{
+      groups[g].forEach(n=>{
+        const v = bySection[n] || 0;
+        html += `<td>${v ? fmtNum(v) : "—"}</td>`;
+      });
+    });
+    html += `<td style="font-weight:700;background:#fff8e1">${fmtNum(grand)}</td></tr></tbody></table></div>`;
+
+    html += '<div style="margin-top:12px;font-size:13px">';
+    order.forEach(g=>{
+      const t = byGroup[g] || 0;
+      html += `<div style="margin:3px 0;display:flex;align-items:center;gap:8px">
+        <span class="color-swatch" style="background:${colorOf(g)}"></span>
+        <span style="flex:1">${esc(g)}</span>
+        <b>${fmtBYN(t)}</b>
+      </div>`;
+    });
+    html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:14px">
+      Всего за период: <b>${fmtBYN(grand)}</b> · ${entries.length} записей</div></div>`;
+    html += `<div style="margin-top:6px;font-size:12px;color:var(--muted)">${esc(periodTitle)}</div>`;
+    out.innerHTML = html;
+    return;
+  }
+
+  let rows = [];
+  let periodTitle = "";
+
+  if(summaryMode === "day"){
+    const monthStr = document.getElementById("day-period").value;
+    if(!monthStr){ out.innerHTML='<div class="empty">Выберите месяц</div>'; return; }
+    const [y,m] = monthStr.split("-").map(Number);
+    const days = new Date(y,m,0).getDate();
+    periodTitle = `Дни — ${MN_SHORT[m-1]} ${y}`;
+    for(let d=1; d<=days; d++){
+      const key = `${y}-${pad(m)}-${pad(d)}`;
+      rows.push({key, label:`${pad(d)}.${pad(m)} ${weekdayName(key)}`,
+        entries: state.entries.filter(e=>e.date===key)});
+    }
+  }
+  else if(summaryMode === "week"){
+    const y = parseInt(document.getElementById("week-period").value,10);
+    if(!y){ out.innerHTML='<div class="empty">Укажите год</div>'; return; }
+    periodTitle = `Недели — ${y} год`;
+    const byWeek = {};
+    state.entries.forEach(e=>{
+      const w = isoWeek(e.date);
+      if(w.year === y){ (byWeek[w.week]=byWeek[w.week]||[]).push(e); }
+    });
+    Object.keys(byWeek).map(Number).sort((a,b)=>a-b).forEach(w=>{
+      const entries = byWeek[w];
+      const sample = entries[0].date;
+      const dt = new Date(sample+"T00:00:00");
+      const dow = dt.getDay() || 7;
+      const monday = new Date(dt); monday.setDate(dt.getDate() - (dow-1));
+      const monStr = toISODate(monday);
+      rows.push({key:w, label:`Нед. ${w} (с ${monStr.slice(8)}.${monStr.slice(5,7)})`, entries});
+    });
+  }
+  else {
+    const y = parseInt(document.getElementById("month-period").value,10);
+    if(!y){ out.innerHTML='<div class="empty">Укажите год</div>'; return; }
+    periodTitle = `Месяцы — ${y} год`;
+    const MN = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+    for(let m=1; m<=12; m++){
+      const prefix = `${y}-${pad(m)}`;
+      const entries = state.entries.filter(e=>e.date.startsWith(prefix));
+      if(entries.length === 0) continue;
+      rows.push({key:m, label:MN[m-1], entries});
+    }
+  }
+
+  if(!rows.length || rows.every(r=>r.entries.length===0)){
+    out.innerHTML = `<div class="empty">Нет данных за период<br><small>${esc(periodTitle)}</small></div>`;
+    return;
+  }
+
+  const bySection = {}, byGroup = {};
+  let grand = 0;
+  const rowData = rows.map(r=>{
+    const map = {};
+    let rowTotal = 0;
+    r.entries.forEach(e=>{
+      map[e.section] = (map[e.section]||0) + e.amount;
+      rowTotal += e.amount;
+    });
+    grand += rowTotal;
+    flat.forEach(s=>{
+      const v = map[s.name]||0;
+      if(v){
+        bySection[s.name] = (bySection[s.name]||0) + v;
+        byGroup[s.group] = (byGroup[s.group]||0) + v;
+      }
+    });
+    return {label: r.label, map, rowTotal};
+  });
+
+  let html = '<div class="table-scroll"><table class="summary-table"><thead>';
+  html += `<tr><th rowspan="2" style="vertical-align:middle">${
+    summaryMode==="day"?"День":summaryMode==="week"?"Неделя":"Месяц"
+  }</th>`;
+  order.forEach(g=>{
+    html += `<th colspan="${groups[g].length}" style="background:${colorOf(g)}">${esc(g)}</th>`;
+  });
+  html += '<th rowspan="2" style="vertical-align:middle;background:#ffe4b5">Итого</th></tr><tr>';
+  order.forEach(g=>{
+    groups[g].forEach(n=>{
+      html += `<th style="background:${colorOf(g)}">${esc(n)}</th>`;
+    });
+  });
+  html += "</tr></thead><tbody>";
+
+  rowData.forEach(r=>{
+    html += `<tr><td>${esc(r.label)}</td>`;
+    order.forEach(g=>{
+      groups[g].forEach(n=>{
+        const v = r.map[n]||0;
+        html += `<td>${v ? fmtNum(v) : "—"}</td>`;
+      });
+    });
+    html += `<td style="font-weight:600;background:#fff8e1">${r.rowTotal ? fmtNum(r.rowTotal) : "—"}</td></tr>`;
+  });
+
+  html += '<tr class="total"><td>ИТОГО</td>';
+  order.forEach(g=>{
+    groups[g].forEach(n=>{
+      const v = bySection[n]||0;
+      html += `<td>${v ? fmtNum(v) : "—"}</td>`;
+    });
+  });
+  html += `<td>${fmtNum(grand)}</td></tr></tbody></table></div>`;
+
+  html += '<div style="margin-top:12px;font-size:12px;color:var(--muted)">';
+  order.forEach(g=>{
+    const t = byGroup[g]||0;
+    html += `<div style="margin:3px 0"><span class="color-swatch" style="background:${colorOf(g)}"></span>${esc(g)}: <b>${fmtBYN(t)}</b></div>`;
+  });
+  html += `<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">Всего за период: <b>${fmtBYN(grand)}</b></div></div>`;
+  html += `<div style="margin-top:6px;font-size:12px;color:var(--muted)">${esc(periodTitle)}</div>`;
+  out.innerHTML = html;
+}
+
+/* ================== ГРАФИКИ ================== */
+function renderChartsGroupSelect(){
+  const sel = document.getElementById("charts-group");
+  const cur = sel.value;
+  const {order} = sectionOrder();
+  sel.innerHTML = '<option value="">Все группы (стек)</option>' +
+    order.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join("");
+  if([...sel.options].some(o=>o.value===cur)) sel.value = cur;
+}
+
+/* Возвращает массив месяцев или null, если диапазон некорректен */
+function getChartMonths(mode){
+  const now = new Date();
+  const list = [];
+
+  if(mode === "custom"){
+    const from = document.getElementById("charts-from").value;
+    const to   = document.getElementById("charts-to").value;
+    if(!from || !to) return null;
+    if(from > to) return null;
+    const fromD = new Date(from + "T00:00:00");
+    const toD   = new Date(to   + "T00:00:00");
+    let cur = new Date(fromD.getFullYear(), fromD.getMonth(), 1);
+    const endM = new Date(toD.getFullYear(), toD.getMonth(), 1);
+    while(cur <= endM){
+      list.push({key: `${cur.getFullYear()}-${pad(cur.getMonth()+1)}`});
+      cur.setMonth(cur.getMonth()+1);
+    }
+  } else if(mode === "3m" || mode === "6m" || mode === "12m"){
+    const n = parseInt(mode,10);
+    for(let i = n-1; i >= 0; i--){
+      const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+      list.push({key: `${d.getFullYear()}-${pad(d.getMonth()+1)}`});
+    }
+  } else {
+    const y = mode === "lastYear" ? now.getFullYear()-1 : now.getFullYear();
+    for(let m=0; m<12; m++){
+      list.push({key: `${y}-${pad(m+1)}`});
+    }
+  }
+
+  const sameYear = list.length > 0 && list.every(m => m.key.slice(0,4) === list[0].key.slice(0,4));
+  return list.map(m=>{
+    const mo = parseInt(m.key.slice(5),10) - 1;
+    const label = sameYear ? MN_SHORT[mo] : MN_SHORT[mo] + "'" + m.key.slice(2,4);
+    return {key: m.key, label};
+  });
+}
+
+function svgStackedBars(months, groupNames, dataByMonth){
+  const W = 800, H = 360;
+  const padL = 55, padR = 15, padT = 25, padB = 42;
+  const cw = W - padL - padR, ch = H - padT - padB;
+  const n = months.length;
+  const slot = cw / n;
+  const barW = Math.min(52, slot * 0.68);
+
+  const monthTotals = months.map(m =>
+    groupNames.reduce((s,g)=>s+(dataByMonth[m.key][g]||0), 0));
+  const max = Math.max(1, ...monthTotals);
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">`;
+
+  const ySteps = 4;
+  for(let i = 0; i <= ySteps; i++){
+    const v = max * i / ySteps;
+    const y = padT + ch - (i/ySteps)*ch;
+    svg += `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#e5e7eb"/>`;
+    svg += `<text x="${padL-6}" y="${y+4}" text-anchor="end" font-size="10" fill="#6b7280">${fmtShort(v)}</text>`;
+  }
+
+  months.forEach((m, i)=>{
+    const xCenter = padL + slot*i + slot/2;
+    const x = xCenter - barW/2;
+    const total = monthTotals[i];
+    let yCursor = padT + ch;
+    groupNames.forEach(g=>{
+      const v = dataByMonth[m.key][g] || 0;
+      if(v <= 0) return;
+      const h = (v/max)*ch;
+      yCursor -= h;
+      svg += `<rect x="${x}" y="${yCursor}" width="${barW}" height="${h}" fill="${colorOf(g)}" stroke="#fff" stroke-width="0.5"/>`;
+    });
+    const lblFont = n > 12 ? 8 : 10;
+    svg += `<text x="${xCenter}" y="${H-padB+18}" text-anchor="middle" font-size="${lblFont}" fill="#374151">${m.label}</text>`;
+    if(total > 0){
+      svg += `<text x="${xCenter}" y="${yCursor-5}" text-anchor="middle" font-size="${n>12?8:10}" fill="#1f2937" font-weight="600">${fmtShort(total)}</text>`;
+    }
+  });
+
+  svg += "</svg>";
+  return svg;
+}
+
+function svgDonut(groupNames, totalsByGroup){
+  const size = 280;
+  const cx = size/2, cy = size/2, r = 100, ir = 62;
+  const total = groupNames.reduce((s,g)=>s+(totalsByGroup[g]||0),0);
+  if(total === 0) return '<div class="empty">Нет данных</div>';
+
+  let angle = -Math.PI/2;
+  let svg = `<svg viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">`;
+
+  groupNames.forEach(g=>{
+    const v = totalsByGroup[g]||0;
+    if(v <= 0) return;
+    const frac = v/total;
+    const a1 = angle;
+    const a2 = angle + frac * Math.PI*2;
+    const large = frac > 0.5 ? 1 : 0;
+    const x1o = cx + r*Math.cos(a1), y1o = cy + r*Math.sin(a1);
+    const x2o = cx + r*Math.cos(a2), y2o = cy + r*Math.sin(a2);
+    const x1i = cx + ir*Math.cos(a2), y1i = cy + ir*Math.sin(a2);
+    const x2i = cx + ir*Math.cos(a1), y2i = cy + ir*Math.sin(a1);
+    svg += `<path d="M ${x1o} ${y1o} A ${r} ${r} 0 ${large} 1 ${x2o} ${y2o} L ${x1i} ${y1i} A ${ir} ${ir} 0 ${large} 0 ${x2i} ${y2i} Z" fill="${colorOf(g)}" stroke="#fff" stroke-width="1"/>`;
+    angle = a2;
+  });
+
+  svg += `<text x="${cx}" y="${cy-4}" text-anchor="middle" font-size="11" fill="#6b7280">Всего</text>`;
+  svg += `<text x="${cx}" y="${cy+16}" text-anchor="middle" font-size="15" font-weight="700" fill="#1f2937">${fmtShort(total)}</text>`;
+  svg += `<text x="${cx}" y="${cy+32}" text-anchor="middle" font-size="10" fill="#6b7280">BYN</text>`;
+  svg += "</svg>";
+  return svg;
+}
+
+function renderCharts(){
+  const period = document.getElementById("charts-period").value;
+  const groupFilter = document.getElementById("charts-group").value;
+  const months = getChartMonths(period);
+
+  if(months === null){
+    document.getElementById("chart-bars").innerHTML = '<div class="empty">Укажите корректный диапазон дат<br><small>«От» не позже «До», оба поля заполнены</small></div>';
+    document.getElementById("chart-donut").innerHTML = '';
+    document.getElementById("chart-legend").innerHTML = '';
+    return;
+  }
+
+  const {order} = sectionOrder();
+  if(!order.length){
+    document.getElementById("chart-bars").innerHTML = '<div class="empty">Разделы не заданы</div>';
+    document.getElementById("chart-donut").innerHTML = '';
+    document.getElementById("chart-legend").innerHTML = '';
+    return;
+  }
+
+  // Фильтр по датам: для custom — точные границы, для остальных — по месяцам
+  let dateFilter;
+  if(period === "custom"){
+    const from = document.getElementById("charts-from").value;
+    const to   = document.getElementById("charts-to").value;
+    dateFilter = (d) => d >= from && d <= to;
+  } else {
+    const monthKeys = new Set(months.map(m => m.key));
+    dateFilter = (d) => monthKeys.has(d.slice(0,7));
+  }
+
+  const groupNames = groupFilter ? [groupFilter] : order;
+  const dataByMonth = {};
+  months.forEach(m => dataByMonth[m.key] = {});
+  const totalsByGroup = {};
+
+  state.entries.forEach(e=>{
+    if(!dateFilter(e.date)) return;
+    const key = e.date.slice(0,7);
+    if(dataByMonth[key] !== undefined){
+      const g = groupOfSection(e.section);
+      dataByMonth[key][g] = (dataByMonth[key][g]||0) + e.amount;
+      totalsByGroup[g] = (totalsByGroup[g]||0) + e.amount;
+    }
+  });
+
+  document.getElementById("chart-bars").innerHTML = svgStackedBars(months, groupNames, dataByMonth);
+  document.getElementById("chart-donut").innerHTML = svgDonut(order, totalsByGroup);
+
+  const grandTotal = order.reduce((s,g)=>s+(totalsByGroup[g]||0),0);
+  let legend = "";
+  order.forEach(g=>{
+    const v = totalsByGroup[g]||0;
+    const pct = grandTotal > 0 ? (v/grandTotal*100).toFixed(1) : "0.0";
+    legend += `<div style="display:flex;align-items:center;gap:8px;margin:4px 0;font-size:13px">
+      <span class="color-swatch" style="background:${colorOf(g)};width:12px;height:12px"></span>
+      <span style="flex:1">${esc(g)}</span>
+      <b style="white-space:nowrap">${fmtBYN(v)}</b>
+      <span style="color:var(--muted);min-width:48px;text-align:right">${pct}%</span>
+    </div>`;
+  });
+  legend += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:13px;display:flex;justify-content:space-between">
+    <b>Всего за период</b><b>${fmtBYN(grandTotal)}</b></div>`;
+  document.getElementById("chart-legend").innerHTML = legend;
+}
+
+document.getElementById("charts-period").onchange = ()=>{
+  const mode = document.getElementById("charts-period").value;
+  document.getElementById("charts-custom-range").style.display = mode === "custom" ? "" : "none";
+  renderCharts();
+};
+["charts-from","charts-to"].forEach(id=>{
+  document.getElementById(id).onchange = renderCharts;
+});
+document.getElementById("charts-group").onchange = renderCharts;
+
+document.querySelectorAll("[data-charts-preset]").forEach(btn=>{
+  btn.onclick = ()=>{
+    const preset = btn.dataset.chartsPreset;
+    const n = new Date();
+    let from, to;
+    if(preset === "month"){
+      from = new Date(n.getFullYear(), n.getMonth(), 1);
+      to   = new Date(n.getFullYear(), n.getMonth()+1, 0);
+    } else if(preset === "year"){
+      from = new Date(n.getFullYear(), 0, 1);
+      to   = new Date(n.getFullYear(), 11, 31);
+    } else if(preset === "3m"){
+      from = new Date(n.getFullYear(), n.getMonth()-2, 1);
+      to   = new Date(n.getFullYear(), n.getMonth()+1, 0);
+    } else if(preset === "6m"){
+      from = new Date(n.getFullYear(), n.getMonth()-5, 1);
+      to   = new Date(n.getFullYear(), n.getMonth()+1, 0);
+    }
+    document.getElementById("charts-from").value = toISODate(from);
+    document.getElementById("charts-to").value   = toISODate(to);
+    renderCharts();
+  };
+});
+
+/* ================== НАСТРОЙКИ ================== */
+function renderSectionsEditor(){
+  const el = document.getElementById("sections-editor");
+  const allGroups = Array.from(new Set(state.sections.map(s=>s.group).concat(GROUP_ORDER)))
+    .filter((v,i,a)=>a.indexOf(v)===i);
+  el.innerHTML = state.sections.map((s,i)=>`
+    <div class="section-manage">
+      <input value="${esc(s.name)}" data-edit-name="${i}" placeholder="Раздел">
+      <select data-edit-group="${i}">
+        ${allGroups.map(g=>`<option ${g===s.group?"selected":""}>${esc(g)}</option>`).join("")}
+      </select>
+      <button class="del-btn" data-del-section="${i}">✕</button>
+    </div>`).join("");
+
+  el.querySelectorAll("[data-edit-name]").forEach(inp=>{
+    inp.onchange = ()=>{
+      const i = +inp.dataset.editName;
+      const oldName = state.sections[i].name;
+      const newName = inp.value.trim();
+      if(!newName){ inp.value = oldName; return; }
+      if(newName !== oldName && state.sections.some((s,j)=>j!==i && s.name===newName)){
+        alert("Раздел с таким именем уже есть"); inp.value = oldName; return;
+      }
+      state.sections[i].name = newName;
+      state.entries.forEach(e=>{ if(e.section === oldName) e.section = newName; });
+      save(); renderAll();
+    };
+  });
+  el.querySelectorAll("[data-edit-group]").forEach(sel=>{
+    sel.onchange = ()=>{
+      const i = +sel.dataset.editGroup;
+      state.sections[i].group = sel.value;
+      save(); renderAll();
+    };
+  });
+  el.querySelectorAll("[data-del-section]").forEach(btn=>{
+    btn.onclick = ()=>{
+      const i = +btn.dataset.delSection;
+      const s = state.sections[i];
+      const used = state.entries.some(e=>e.section === s.name);
+      if(used && !confirm(`В разделе «${s.name}» есть записи. Удалить раздел вместе с ними?`)) return;
+      state.sections.splice(i,1);
+      if(used) state.entries = state.entries.filter(e=>e.section !== s.name);
+      save(); renderAll();
+    };
+  });
+}
+
+document.getElementById("add-section").onclick = ()=>{
+  state.sections.push({name:"Новый раздел", group:"Личное"});
+  save(); renderAll();
+  toast("Добавлено — задайте название и группу");
+};
+
+document.getElementById("export-btn").onclick = ()=>{
+  const blob = new Blob([JSON.stringify(state,null,2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `expenses-${todayISO()}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  toast("Файл сохранён");
+};
+
+document.getElementById("import-btn").onclick = ()=>document.getElementById("import-file").click();
+document.getElementById("import-file").onchange = e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    try{
+      const data = JSON.parse(ev.target.result);
+      if(!data || !Array.isArray(data.sections) || !Array.isArray(data.entries))
+        throw new Error("Неверный формат файла");
+      if(!confirm(`Заменить все текущие данные?\nЗаписей в файле: ${data.entries.length}`)) return;
+      state = data; save(); renderAll();
+      toast("Импорт выполнен");
+    }catch(err){ alert("Ошибка: "+err.message); }
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+};
+
+document.getElementById("clear-btn").onclick = ()=>{
+  if(!confirm("Удалить ВСЕ записи (разделы останутся)?")) return;
+  state.entries = []; save(); renderAll();
+  toast("Записи удалены");
+};
+
+/* ================== ЗАПУСК ================== */
+function renderAll(){
+  renderEntrySelect();
+  renderRecent();
+  renderJournalSelect();
+  renderJournal();
+  renderSummary();
+  renderChartsGroupSelect();
+  renderCharts();
+  renderSectionsEditor();
+}
+
+(function init(){
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = pad(now.getMonth()+1);
+
+  document.getElementById("entry-date").value = todayISO();
+  document.getElementById("journal-month").value = `${year}-${month}`;
+  document.getElementById("day-period").value = `${year}-${month}`;
+  document.getElementById("week-period").value = year;
+  document.getElementById("month-period").value = year;
+
+  document.getElementById("range-from").value = toISODate(new Date(year, now.getMonth(), 1));
+  document.getElementById("range-to").value   = toISODate(new Date(year, now.getMonth()+1, 0));
+
+  // Дефолт для графика: последние 6 месяцев (поля скрыты, но заполнены)
+  const from6 = new Date(year, now.getMonth()-5, 1);
+  const toEnd = new Date(year, now.getMonth()+1, 0);
+  document.getElementById("charts-from").value = toISODate(from6);
+  document.getElementById("charts-to").value   = toISODate(toEnd);
+
+  renderAll();
+})();
+
+/* ================== SERVICE WORKER (для офлайн-режима и установки) ================== */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(err => {
+      console.log('SW registration failed:', err);
+    });
+  });
+}
+</script>
+</body>
+</html>

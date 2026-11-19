@@ -1,0 +1,20 @@
+{
+  "name": "Расходы BYN",
+  "short_name": "Расходы",
+  "description": "Учёт личных и бытовых расходов в белорусских рублях",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f4f6",
+  "theme_color": "#2e7d32",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
